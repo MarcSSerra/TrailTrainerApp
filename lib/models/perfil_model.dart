@@ -1,3 +1,44 @@
+class ZonaFC {
+  final int min;
+  final int max;
+  final String nombre;
+  final String pct;
+
+  ZonaFC({required this.min, required this.max, required this.nombre, required this.pct});
+
+  factory ZonaFC.fromJson(Map<String, dynamic> json) {
+    return ZonaFC(
+      min: json['min'] ?? 0,
+      max: json['max'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      pct: json['pct'] ?? '',
+    );
+  }
+}
+
+class ZonasFC {
+  final ZonaFC? zona1;
+  final ZonaFC? zona2;
+  final ZonaFC? zona3;
+  final ZonaFC? zona4;
+  final ZonaFC? zona5;
+
+  ZonasFC({this.zona1, this.zona2, this.zona3, this.zona4, this.zona5});
+
+  factory ZonasFC.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return ZonasFC();
+    return ZonasFC(
+      zona1: json['zona1'] != null ? ZonaFC.fromJson(json['zona1']) : null,
+      zona2: json['zona2'] != null ? ZonaFC.fromJson(json['zona2']) : null,
+      zona3: json['zona3'] != null ? ZonaFC.fromJson(json['zona3']) : null,
+      zona4: json['zona4'] != null ? ZonaFC.fromJson(json['zona4']) : null,
+      zona5: json['zona5'] != null ? ZonaFC.fromJson(json['zona5']) : null,
+    );
+  }
+
+  List<ZonaFC?> get todas => [zona1, zona2, zona3, zona4, zona5];
+}
+
 class Perfil {
   final String stravaId;
   final String? nombre;
@@ -9,6 +50,7 @@ class Perfil {
   final int? fcMaxima;
   final int? fcReposo;
   final double? imc;
+  final ZonasFC? zonasFC;
 
   Perfil({
     required this.stravaId,
@@ -21,6 +63,7 @@ class Perfil {
     this.fcMaxima,
     this.fcReposo,
     this.imc,
+    this.zonasFC,
   });
 
   factory Perfil.fromJson(Map<String, dynamic> json) {
@@ -37,6 +80,7 @@ class Perfil {
       fcMaxima: json['fc_maxima'],
       fcReposo: json['fc_reposo'],
       imc: json['imc']?.toDouble(),
+      zonasFC: json['zonas_fc'] != null ? ZonasFC.fromJson(json['zonas_fc']) : null,
     );
   }
 }

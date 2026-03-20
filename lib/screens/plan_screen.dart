@@ -742,6 +742,11 @@ class _PlanScreenState extends State<PlanScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                // RPE - mostrar si existe o permitir reportar
+                if (estado == 'completada') ...[
+                  _buildRPESection(sesion),
+                  const SizedBox(height: 12),
+                ],
                 if (sesion['calentamiento'] != null) ...[
                   const Text('Calentamiento:', style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(sesion['calentamiento']),
@@ -791,6 +796,157 @@ class _PlanScreenState extends State<PlanScreen> {
     if (carga <= 5) return Colors.orange;
     if (carga <= 7) return Colors.deepOrange;
     return Colors.red;
+  }
+
+  Widget _buildRPESection(Map<String, dynamic> sesion) {
+    final rpe = sesion['rpe_usuario'] as int?;
+    final cargaReal = sesion['carga_real'] as int?;
+    
+    if (rpe != null) {
+      // Mostrar RPE ya reportado
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.purple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.purple.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.psychology, color: Colors.purple, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Esfuerzo percibido (RPE): $rpe/10', 
+                      style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.purple)),
+                  if (cargaReal != null)
+                    Text('Carga real: $cargaReal', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18, color: Colors.purple),
+              onPressed: () => _mostrarDialogoRPE(sesion, rpeActual: rpe),
+              tooltip: 'Editar RPE',
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Permitir reportar RPE
+    return OutlinedButton.icon(
+      onPressed: () => _mostrarDialogoRPE(sesion),
+      icon: const Icon(Icons.psychology, size: 16),
+      label: const Text('¿Cómo te sentiste? Reportar RPE'),
+      style: OutlinedButton.styleFrom(foregroundColor: Colors.purple),
+    );
+  }
+
+  void _mostrarDialogoRPE(Map<String, dynamic> sesion, {int? rpeActual}) {
+    int rpeSeleccionado = rpeActual ?? 5;
+    final notasController = TextEditingController();
+    
+    final descripciones = {
+      1: 'Muy muy fácil',
+      2: 'Fácil',
+      3: 'Moderado',
+      4: 'Algo difícil',
+      5: 'Difícil',
+      6: 'Más difícil',
+      7: 'Muy difícil',
+      8: 'Muy muy difícil',
+      9: 'Casi máximo',
+      10: 'Máximo esfuerzo',
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('🧠 ¿Cómo te sentiste?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'RPE (Rating of Perceived Exertion)\nEscala del 1 al 10',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              // Slider visual
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('$rpeSeleccionado', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.purple)),
+                  const Text('/10', style: TextStyle(fontSize: 24, color: Colors.grey)),
+                ],
+              ),
+              Text(
+                descripciones[rpeSeleccionado] ?? '',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 16),
+              Slider(
+                value: rpeSeleccionado.toDouble(),
+                min: 1,
+                max: 10,
+                divisions: 9,
+                activeColor: Colors.purple,
+                onChanged: (v) => setDialogState(() => rpeSeleccionado = v.round()),
+              ),
+              // Botones rápidos
+              Wrap(
+                spacing: 4,
+                children: List.generate(10, (i) {
+                  final val = i + 1;
+                  return ChoiceChip(
+                    label: Text('$val'),
+                    selected: rpeSeleccionado == val,
+                    onSelected: (_) => setDialogState(() => rpeSeleccionado = val),
+                    selectedColor: Colors.purple.withOpacity(0.3),
+                  );
+                }),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: notasController,
+                decoration: const InputDecoration(
+                  labelText: 'Notas (opcional)',
+                  hintText: 'ej: Piernas cansadas, buen ritmo...',
+                  prefixIcon: Icon(Icons.note),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () async {
+                final api = context.read<ApiService>();
+                await api.reportarRPE(
+                  sesion['id'],
+                  rpeSeleccionado,
+                  notas: notasController.text.isNotEmpty ? notasController.text : null,
+                );
+                Navigator.pop(ctx);
+                _loadPlan();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ RPE $rpeSeleccionado registrado'),
+                    backgroundColor: Colors.purple,
+                  ),
+                );
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _mostrarDialogoEditarDatos(Map<String, dynamic> sesion) {

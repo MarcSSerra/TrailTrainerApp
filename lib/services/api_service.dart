@@ -189,6 +189,21 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> reportarRPE(int sesionId, int rpe, {String? notas}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/planes/sesiones/$sesionId/rpe'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'rpe': rpe,
+        if (notas != null) 'notas': notas,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Error reportando RPE');
+  }
+
   Future<void> marcarVacaciones(String userId, DateTime inicio, DateTime fin) async {
     final response = await http.post(
       Uri.parse('$baseUrl/planes/$userId/vacaciones'),
