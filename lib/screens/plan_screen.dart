@@ -383,98 +383,103 @@ class _PlanScreenState extends State<PlanScreen> {
           )
         : null;
 
-    return Column(
-      children: [
-        // Header del plan
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: Theme.of(context).colorScheme.primaryContainer,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return RefreshIndicator(
+      onRefresh: _loadPlan,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            // Header del plan
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(plan['nombre'] ?? 'Mi Plan', 
-                        style: Theme.of(context).textTheme.titleMedium),
-                  ),
-                  // Botón sincronizar Strava
-                  IconButton(
-                    icon: _sincronizando 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.sync, color: Colors.deepOrange),
-                    onPressed: _sincronizando ? null : _sincronizarConStrava,
-                    tooltip: 'Sincronizar con Strava',
-                  ),
-                  PopupMenuButton(
-                    itemBuilder: (ctx) => [
-                      const PopupMenuItem(value: 'vacaciones', child: Text('🏖️ Gestionar vacaciones')),
-                      const PopupMenuItem(value: 'regenerar', child: Text('🔄 Regenerar plan')),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(plan['nombre'] ?? 'Mi Plan', 
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ),
+                      // Botón sincronizar Strava
+                      IconButton(
+                        icon: _sincronizando 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.sync, color: Colors.deepOrange),
+                        onPressed: _sincronizando ? null : _sincronizarConStrava,
+                        tooltip: 'Sincronizar con Strava',
+                      ),
+                      PopupMenuButton(
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(value: 'vacaciones', child: Text('🏖️ Gestionar vacaciones')),
+                          const PopupMenuItem(value: 'regenerar', child: Text('🔄 Regenerar plan')),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'vacaciones') {
+                            _mostrarVacaciones();
+                          } else if (value == 'regenerar') {
+                            final auth = context.read<AuthService>();
+                            final api = context.read<ApiService>();
+                            await api.eliminarPlanActivo(auth.userId!);
+                            await _loadPlan(); // Recargar para mostrar vacaciones
+                          }
+                        },
+                      ),
                     ],
-                    onSelected: (value) async {
-                      if (value == 'vacaciones') {
-                        _mostrarVacaciones();
-                      } else if (value == 'regenerar') {
-                        final auth = context.read<AuthService>();
-                        final api = context.read<ApiService>();
-                        await api.eliminarPlanActivo(auth.userId!);
-                        await _loadPlan(); // Recargar para mostrar vacaciones
-                      }
-                    },
                   ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: progreso / 100),
+                  const SizedBox(height: 4),
+                  Text('${plan['sesiones_completadas']}/${plan['sesiones_total']} sesiones · ${progreso.toStringAsFixed(0)}%'),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: progreso / 100),
-              const SizedBox(height: 4),
-              Text('${plan['sesiones_completadas']}/${plan['sesiones_total']} sesiones · ${progreso.toStringAsFixed(0)}%'),
-            ],
-          ),
-        ),
-        
-        // Selector de semana
-        if (_resumenSemanas.isNotEmpty) ...[
-          Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: _resumenSemanas.length,
-              itemBuilder: (ctx, i) {
-                final semana = _resumenSemanas[i];
-                final isSelected = semana['semana'] == _semanaSeleccionada;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: ChoiceChip(
-                    label: Text('S${semana['semana']}'),
-                    selected: isSelected,
-                    onSelected: (_) => setState(() => _semanaSeleccionada = semana['semana']),
-                  ),
-                );
-              },
             ),
-          ),
-          
-          // Resumen de la semana
-          if (resumenSemana != null && resumenSemana.isNotEmpty)
-            _buildResumenSemana(resumenSemana),
-        ],
-        
-        // Lista de sesiones de la semana
-        Expanded(
-          child: sesionesSemana.isEmpty
-              ? const Center(child: Text('No hay sesiones esta semana'))
-              : RefreshIndicator(
-                  onRefresh: _loadPlan,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: sesionesSemana.length,
-                    itemBuilder: (ctx, i) => _buildSesionCard(sesionesSemana[i]),
-                  ),
+            
+            // Selector de semana
+            if (_resumenSemanas.isNotEmpty) ...[
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  itemCount: _resumenSemanas.length,
+                  itemBuilder: (ctx, i) {
+                    final semana = _resumenSemanas[i];
+                    final isSelected = semana['semana'] == _semanaSeleccionada;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ChoiceChip(
+                        label: Text('S${semana['semana']}'),
+                        selected: isSelected,
+                        onSelected: (_) => setState(() => _semanaSeleccionada = semana['semana']),
+                      ),
+                    );
+                  },
                 ),
+              ),
+              
+              // Resumen de la semana
+              if (resumenSemana != null && resumenSemana.isNotEmpty)
+                _buildResumenSemana(resumenSemana),
+            ],
+            
+            // Lista de sesiones de la semana
+            if (sesionesSemana.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('No hay sesiones esta semana'),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  children: sesionesSemana.map((s) => _buildSesionCard(s)).toList(),
+                ),
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -744,10 +749,29 @@ class _PlanScreenState extends State<PlanScreen> {
                 ],
                 if ((sesion['bloques'] as List?)?.isNotEmpty ?? false) ...[
                   const Text('Ejercicios:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...((sesion['bloques'] as List).map((b) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text('• ${b['nombre'] ?? b}: ${b['series'] ?? ''}x${b['repeticiones'] ?? ''} ${b['tiempo_ejecucion'] ?? ''}'),
-                  ))),
+                  ...((sesion['bloques'] as List).map((b) {
+                    final nombre = b['nombre'] ?? b.toString();
+                    final series = b['series'] ?? '';
+                    final reps = b['repeticiones'] ?? '';
+                    final tiempo = b['tiempo_ejecucion'] ?? '';
+                    final descanso = b['tiempo_descanso'];
+                    
+                    String detalle = '• $nombre';
+                    if (series != '' || reps != '') {
+                      detalle += ': ${series}x$reps';
+                    }
+                    if (tiempo != '') {
+                      detalle += ' $tiempo';
+                    }
+                    if (descanso != null && descanso != '' && descanso != '0') {
+                      detalle += ' (desc: $descanso)';
+                    }
+                    
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(detalle),
+                    );
+                  })),
                   const SizedBox(height: 8),
                 ],
                 if (sesion['vuelta_calma'] != null) ...[
