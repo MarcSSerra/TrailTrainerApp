@@ -114,7 +114,12 @@ class _PlanScreenState extends State<PlanScreen> {
       if (response.success) {
         await _loadPlan();
       } else {
-        setState(() => _error = response.message ?? 'Error generando plan');
+        // Mostrar preguntas pendientes si las hay
+        String errorMsg = response.message ?? 'Error generando plan';
+        if (response.preguntasPendientes != null && response.preguntasPendientes!.isNotEmpty) {
+          errorMsg = response.preguntasPendientes!.join('\n\n');
+        }
+        setState(() => _error = errorMsg);
       }
     } catch (e) {
       setState(() => _error = e.toString());
