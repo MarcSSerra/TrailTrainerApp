@@ -509,9 +509,11 @@ class _PlanScreenState extends State<PlanScreen> {
           Row(
             children: [
               const Text('📋 Plan: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-              Text(
-                '${planificado?['horas'] ?? 0}h · ${planificado?['km'] ?? 0}km · Carga ${planificado?['carga'] ?? 0}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              Expanded(
+                child: Text(
+                  '${planificado?['horas'] ?? 0}h · ${planificado?['km'] ?? 0}km · ${planificado?['desnivel'] ?? 0}m⬆ · Carga ${planificado?['carga'] ?? 0}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
               ),
             ],
           ),
@@ -520,9 +522,11 @@ class _PlanScreenState extends State<PlanScreen> {
           Row(
             children: [
               const Text('✅ Real: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.green)),
-              Text(
-                '${completado?['horas'] ?? 0}h · ${completado?['km'] ?? 0}km · ${completado?['sesiones'] ?? 0}/${planificado?['sesiones'] ?? 0} sesiones',
-                style: TextStyle(fontSize: 12, color: Colors.green[700]),
+              Expanded(
+                child: Text(
+                  '${completado?['horas'] ?? 0}h · ${completado?['km'] ?? 0}km · ${completado?['desnivel'] ?? 0}m⬆ · ${completado?['sesiones'] ?? 0}/${planificado?['sesiones'] ?? 0} sesiones',
+                  style: TextStyle(fontSize: 12, color: Colors.green[700]),
+                ),
               ),
             ],
           ),
@@ -554,6 +558,7 @@ class _PlanScreenState extends State<PlanScreen> {
     final justificacion = sesion['justificacion'] as String?;
     final duracionMin = sesion['duracion_min'] as int?;
     final distanciaKm = sesion['distancia_km'];
+    final desnivelM = sesion['desnivel_m'] as int?;
     final cargaEstimada = sesion['carga_estimada'] as int?;
     
     Color estadoColor;
@@ -602,6 +607,8 @@ class _PlanScreenState extends State<PlanScreen> {
               Text(' ${duracionMin}min', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
             if (distanciaKm != null && distanciaKm > 0)
               Text(' · ${distanciaKm}km', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+            if (desnivelM != null && desnivelM > 0)
+              Text(' · ${desnivelM}m⬆', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
             if (cargaEstimada != null && cargaEstimada > 0)
               Container(
                 margin: const EdgeInsets.only(left: 6),
