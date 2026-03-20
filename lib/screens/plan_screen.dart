@@ -630,7 +630,11 @@ class _PlanScreenState extends State<PlanScreen> {
                   ),
                 ],
               )
-            : null,
+            : IconButton(
+                icon: const Icon(Icons.undo, color: Colors.grey),
+                onPressed: () => _marcarSesion(sesion['id'], 'pendiente'),
+                tooltip: 'Desmarcar',
+              ),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
